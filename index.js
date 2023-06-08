@@ -27,6 +27,7 @@ async function run() {
         await client.connect();
 
         const classesCollection = client.db("summer-camp").collection("classes");
+        const instructorsCollection = client.db("summer-camp").collection("instructors");
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
@@ -36,6 +37,12 @@ async function run() {
             const result = await classesCollection.find().toArray();
             res.send(result);
         })
+
+        app.get("/instructors", async (req, res) => {
+            const result = await instructorsCollection.find().toArray();
+            res.send(result);
+        })
+        
     } finally {
         // Ensures that the client will close when you finish/error
         // await client.close();
