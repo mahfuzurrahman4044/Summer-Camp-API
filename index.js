@@ -47,13 +47,18 @@ async function run() {
         app.post("/selectedClass", async (req, res) => {
             const items = req.body;
             // console.log(items);
-            const result = selectedClassCollection.insertOne(items);
+            const result = await selectedClassCollection.insertOne(items);
             res.send(result);
         })
 
         app.get("/selectedClass", async (req, res) => {
             const result = await selectedClassCollection.find().toArray();
             res.send(result);
+        })
+
+        app.get("/uniqueClass/:email", async (req, res) => {
+            const result = await selectedClassCollection.find({ email: req.params.email }).toArray();
+            res.send(result)
         })
 
     } finally {
