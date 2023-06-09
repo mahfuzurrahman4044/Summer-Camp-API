@@ -28,6 +28,7 @@ async function run() {
 
         const classesCollection = client.db("summer-camp").collection("classes");
         const instructorsCollection = client.db("summer-camp").collection("instructors");
+        const selectedClassCollection = client.db("summer-camp").collection("selectedClass");
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
@@ -42,7 +43,14 @@ async function run() {
             const result = await instructorsCollection.find().toArray();
             res.send(result);
         })
-        
+
+        app.post("/selectedClass", async (req, res) => {
+            const items = req.body;
+            // console.log(items);
+            const result = selectedClassCollection.insertOne(items);
+            res.send(result);
+        })
+
     } finally {
         // Ensures that the client will close when you finish/error
         // await client.close();
