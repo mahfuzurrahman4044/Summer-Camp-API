@@ -56,10 +56,22 @@ async function run() {
             res.send(result);
         })
 
-        app.get("/uniqueClass/:email", async (req, res) => {
-            const result = await selectedClassCollection.find({ email: req.params.email }).toArray();
-            res.send(result)
-        })
+        // app.get("/uniqueClass/:email", async (req, res) => {
+        //     const result = await selectedClassCollection.find({ email: req.params.email }).toArray();
+        //     res.send(result)
+        // })
+
+        app.get('/selectedClass', async (req, res) => {
+            const email = req.query.email;
+      
+            if (!email) {
+              res.send([]);
+            }
+      
+            const query = { email: email };
+            const result = await cartCollection.find(query).toArray();
+            res.send(result);
+          });
 
     } finally {
         // Ensures that the client will close when you finish/error
