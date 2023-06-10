@@ -56,22 +56,22 @@ async function run() {
             res.send(result);
         })
 
-        // app.get("/uniqueClass/:email", async (req, res) => {
-        //     const result = await selectedClassCollection.find({ email: req.params.email }).toArray();
-        //     res.send(result)
-        // })
+        app.get("/uniqueClass/:email", async (req, res) => {
+            const result = await selectedClassCollection.find({ email: req.params.email }).toArray();
+            res.send(result)
+        })
 
-        app.get('/selectedClass', async (req, res) => {
-            const email = req.query.email;
+        // app.get('/selectedClass', async (req, res) => {
+        //     const email = req.query.email;
 
-            if (!email) {
-                res.send([]);
-            }
+        //     if (!email) {
+        //         res.send([]);
+        //     }
 
-            const query = { email: email };
-            const result = await selectedClassCollection.find(query).toArray();
-            res.send(result);
-        });
+        //     const query = { email: email };
+        //     const result = await selectedClassCollection.find(query).toArray();
+        //     res.send(result);
+        // });
 
         app.delete("/selectedClass/:id", async (req, res) => {
             const id = req.params.id;
