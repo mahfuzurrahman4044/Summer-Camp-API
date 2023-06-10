@@ -80,6 +80,20 @@ async function run() {
             res.send(result);
         })
 
+        app.put("/selectedClass/:id", async (req, res) => {
+            const id = req.params.id;
+            console.log(id);
+            const filter = { _id: new ObjectId(id) }
+
+            const paidClass = {
+                $set: {
+                    paymentStatus: "Paid"
+                }
+            }
+            const result = await selectedClassCollection.updateOne(filter, paidClass);
+            res.send(result);
+        })
+
     } finally {
         // Ensures that the client will close when you finish/error
         // await client.close();
