@@ -29,6 +29,7 @@ async function run() {
         const classesCollection = client.db("summer-camp").collection("classes");
         const instructorsCollection = client.db("summer-camp").collection("instructors");
         const selectedClassCollection = client.db("summer-camp").collection("selectedClass");
+        const usersCollection = client.db("summer-camp").collection("users");
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
@@ -136,7 +137,12 @@ async function run() {
             }
         });
 
-
+        app.post("/users", async (req, res) => {
+            const user = req.body;
+            // console.log(user);
+            const result = await usersCollection.insertOne(user);
+            res.send(result);
+        })
 
 
     } finally {
