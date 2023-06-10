@@ -149,6 +149,24 @@ async function run() {
             res.send(result);
         })
 
+        app.get("/allUsers", async (req, res) => {
+            const result = await usersCollection.find().toArray();
+            res.send(result);
+        });
+
+        app.patch("/allUsers/:id", async (req, res) => {
+            console.log(req.params.id);
+            const filter = { _id: new ObjectId(req.params.id) };
+            const update = {
+                $set: {
+                    role: "instructor"
+                }
+            }
+
+            const result = await usersCollection.updateOne(filter, update);
+            res.send(result);
+        })
+
 
     } finally {
         // Ensures that the client will close when you finish/error
