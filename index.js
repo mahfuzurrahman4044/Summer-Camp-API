@@ -80,19 +80,64 @@ async function run() {
             res.send(result);
         })
 
+        // app.put("/selectedClass/:id", async (req, res) => {
+        //     const id = req.params.id;
+        //     console.log(id);
+        //     const filter = { _id: new ObjectId(id) }
+
+        //     const paidClass = {
+        //         $set: {
+        //             paymentStatus: "Paid"
+        //         }
+        //     }
+        //     const result = await selectedClassCollection.updateOne(filter, paidClass);
+        //     res.send(result);
+        // })
+
         app.put("/selectedClass/:id", async (req, res) => {
             const id = req.params.id;
-            console.log(id);
-            const filter = { _id: new ObjectId(id) }
+            const filter = { _id: new ObjectId(id) };
 
-            const paidClass = {
+            // Get the current selected class document
+            const selectedClass = await selectedClassCollection.findOne(filter);
+            if (!selectedClass) {
+                res.status(404).send({ message: "Selected class not found" });
+                return;
+            }
+
+            // Check if the payment status is already "Paid"
+            if (selectedClass.paymentStatus === "Paid") {
+                res.send({ message: "Payment is already confirmed" });
+                return;
+            }
+
+            const updatedClass = {
                 $set: {
                     paymentStatus: "Paid"
                 }
+            };
+            const updateResult = await selectedClassCollection.updateOne(filter, updatedClass);
+
+            // If the update is successful, reduce the availableClasses count by 1
+            if (updateResult.modifiedCount === 1) {
+                const classId = selectedClass.classId;
+                const classFilter = { _id: new ObjectId(classId) };
+
+                // Decrement the availableClasses count by 1
+                const decrementResult = await classesCollection.updateOne(classFilter, { $inc: { availableClasses: -1 } });
+
+                if (decrementResult.modifiedCount === 1) {
+                    res.send({ message: "Payment confirmed and available class count reduced" });
+                } else {
+                    res.send({ message: "Payment confirmed, but failed to update the available class count" });
+                }
+            } else {
+                res.send({ message: "Failed to update payment confirmation" });
             }
-            const result = await selectedClassCollection.updateOne(filter, paidClass);
-            res.send(result);
-        })
+        });
+
+
+
 
     } finally {
         // Ensures that the client will close when you finish/error
