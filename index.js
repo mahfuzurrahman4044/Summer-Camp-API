@@ -167,6 +167,19 @@ async function run() {
             res.send(result);
         })
 
+        app.put("/allUsers/:id", async (req, res) => {
+            console.log(req.params.id);
+            const filter = { _id: new ObjectId(req.params.id) };
+            const update = {
+                $set: {
+                    role: "admin"
+                }
+            }
+
+            const result = await usersCollection.updateOne(filter, update);
+            res.send(result);
+        })
+
 
     } finally {
         // Ensures that the client will close when you finish/error
