@@ -8,7 +8,7 @@ app.use(cors());
 app.use(express.json());
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_User}:${process.env.DB_Pass}@cluster0.83ramik.mongodb.net/?retryWrites=true&w=majority`;
 // console.log(process.env.DB_User, process.env.DB_Pass);
 
@@ -63,15 +63,22 @@ async function run() {
 
         app.get('/selectedClass', async (req, res) => {
             const email = req.query.email;
-      
+
             if (!email) {
-              res.send([]);
+                res.send([]);
             }
-      
+
             const query = { email: email };
-            const result = await cartCollection.find(query).toArray();
+            const result = await selectedClassCollection.find(query).toArray();
             res.send(result);
-          });
+        });
+
+        app.delete("/selectedClass/:id", async (req, res) => {
+            const id = req.params.id;
+            // console.log(id);
+            const result = await selectedClassCollection.deleteOne({ _id: new ObjectId(id) });
+            res.send(result);
+        })
 
     } finally {
         // Ensures that the client will close when you finish/error
