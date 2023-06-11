@@ -194,13 +194,16 @@ async function run() {
 
     app.post("/users", async (req, res) => {
       const user = req.body;
-      // console.log(user);
+      //   console.log(user);
 
-      const existingUser = usersCollection.findOne({ email: user.email });
+      const existingUser = await usersCollection.findOne({ email: user.email });
+    //   console.log(existingUser);
       if (existingUser) {
         return res.send({ message: "User already exist" });
       }
+
       const result = await usersCollection.insertOne(user);
+      //   console.log(result);
       res.send(result);
     });
 
@@ -238,7 +241,7 @@ async function run() {
 
     app.get("/allUsers/:email", async (req, res) => {
       const email = req.params.email;
-      console.log(email);
+      //   console.log(email);
 
       //   if (req.decoded.email !== email) {
       //     res.send({ admin: false });
@@ -246,7 +249,7 @@ async function run() {
 
       const user = await usersCollection.findOne({ email: email });
       const result = { admin: user?.role === "admin" };
-      console.log(result);
+      //   console.log(result);
       res.send(result);
     });
   } finally {
