@@ -71,6 +71,28 @@ async function run() {
       res.send(result);
     });
 
+    app.put("/classes/approved/:id", async (req, res) => {
+      const id = req.params.id;
+      //   console.log(id);
+      const find = await classesCollection.findOne({ _id: new ObjectId(id) });
+      const update = {
+        $set: { status: "Approved" },
+      };
+      const result = await classesCollection.updateOne(find, update);
+      res.send(result);
+    });
+
+    app.put("/classes/deny/:id", async (req, res) => {
+      const id = req.params.id;
+      //   console.log(id);
+      const find = await classesCollection.findOne({ _id: new ObjectId(id) });
+      const update = {
+        $set: { status: "Deny" },
+      };
+      const result = await classesCollection.updateOne(find, update);
+      res.send(result);
+    });
+
     app.get("/instructors", async (req, res) => {
       const result = await instructorsCollection.find().toArray();
       res.send(result);
@@ -197,7 +219,7 @@ async function run() {
       //   console.log(user);
 
       const existingUser = await usersCollection.findOne({ email: user.email });
-    //   console.log(existingUser);
+      //   console.log(existingUser);
       if (existingUser) {
         return res.send({ message: "User already exist" });
       }
