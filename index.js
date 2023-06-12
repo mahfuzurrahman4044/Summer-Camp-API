@@ -198,9 +198,8 @@ async function run() {
       console.log(id);
       const filter = { _id: new ObjectId(id) };
 
-      // Get the current selected class document
 
-      // Check if the payment status is already "Paid"
+      const selectedClass = await selectedClassCollection.findOne(filter);
       if (selectedClass.paymentStatus === "Paid") {
         res.send({ message: "Payment is already confirmed" });
         return;
