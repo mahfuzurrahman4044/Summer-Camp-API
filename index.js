@@ -41,7 +41,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const classesCollection = client.db("summer-camp").collection("classes");
     const instructorsCollection = client
@@ -76,6 +76,13 @@ async function run() {
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
 
+    app.post("/insertClass", async (req, res) => {
+      const insertedClass = req.body;
+      // console.log(insertedClass);
+      const result = classesCollection.insertOne(insertedClass);
+      res.send(result);
+    });
+
     app.get("/classes", async (req, res) => {
       const result = await classesCollection.find().toArray();
       res.send(result);
@@ -105,6 +112,20 @@ async function run() {
 
     app.get("/instructors", async (req, res) => {
       const result = await instructorsCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.get("/selectedInstructor/:email", async (req, res) => {
+      const email = req.params.email;
+      //   console.log(email);
+
+      //   if (req.decoded.email !== email) {
+      //     res.send({ admin: false });
+      //   }
+
+      const user = await usersCollection.findOne({ email: email });
+      const result = { instructor: user?.role === "instructor" };
+      //   console.log(result);
       res.send(result);
     });
 
@@ -174,14 +195,10 @@ async function run() {
 
     app.put("/selectedClass/:id", async (req, res) => {
       const id = req.params.id;
+      console.log(id);
       const filter = { _id: new ObjectId(id) };
 
       // Get the current selected class document
-      const selectedClass = await selectedClassCollection.findOne(filter);
-      if (!selectedClass) {
-        res.status(404).send({ message: "Selected class not found" });
-        return;
-      }
 
       // Check if the payment status is already "Paid"
       if (selectedClass.paymentStatus === "Paid") {
@@ -198,30 +215,6 @@ async function run() {
         filter,
         updatedClass
       );
-
-      // If the update is successful, reduce the availableClasses count by 1
-      if (updateResult.modifiedCount === 1) {
-        const classId = selectedClass.classId;
-        const classFilter = { _id: new ObjectId(classId) };
-
-        // Decrement the availableClasses count by 1
-        const decrementResult = await classesCollection.updateOne(classFilter, {
-          $inc: { availableClasses: -1 },
-        });
-
-        if (decrementResult.modifiedCount === 1) {
-          res.send({
-            message: "Payment confirmed and available class count reduced",
-          });
-        } else {
-          res.send({
-            message:
-              "Payment confirmed, but failed to update the available class count",
-          });
-        }
-      } else {
-        res.send({ message: "Failed to update payment confirmation" });
-      }
     });
 
     app.post("/users", async (req, res) => {
