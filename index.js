@@ -3,6 +3,7 @@ const app = express();
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
+const stripe = require("stripe")(process.env.Payment_Secreat_Key);
 const port = process.env.PORT || 5000;
 
 app.use(cors());
@@ -29,7 +30,6 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = `mongodb+srv://${process.env.DB_User}:${process.env.DB_Pass}@cluster0.83ramik.mongodb.net/?retryWrites=true&w=majority`;
 // console.log(process.env.DB_User, process.env.DB_Pass, process.env.Access_Token_Secreat);
 
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -40,7 +40,6 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
 
     const classesCollection = client.db("summer-camp").collection("classes");
@@ -51,6 +50,7 @@ async function run() {
       .db("summer-camp")
       .collection("selectedClass");
     const usersCollection = client.db("summer-camp").collection("users");
+    const paymentsCollection = client.db("summer-camp").collection("payments");
 
     app.post("/jwt", (req, res) => {
       //   console.log(req.body);
@@ -88,9 +88,22 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/classes/:email", async (req, res) => {
+      try {
+        const email = req.params.email;
+        const result = await classesCollection
+          .find({ instructorEmail: email })
+          .toArray();
+        res.json(result);
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Internal Server Error" });
+      }
+    });
+
     app.put("/classes/approved/:id", async (req, res) => {
       const id = req.params.id;
-      //   console.log(id);
+      console.log(id);
       const find = await classesCollection.findOne({ _id: new ObjectId(id) });
       const update = {
         $set: { status: "Approved" },
@@ -115,17 +128,17 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/selectedInstructor/:email", async (req, res) => {
+    app.get("/selectedInstructor/:email", verifyJWT, async (req, res) => {
       const email = req.params.email;
-      //   console.log(email);
+      // console.log(email);
 
-      //   if (req.decoded.email !== email) {
-      //     res.send({ admin: false });
-      //   }
+      if (!req.decoded || req.decoded.email !== email) {
+        res.send({ instructor: false });
+        return;
+      }
 
       const user = await usersCollection.findOne({ email: email });
       const result = { instructor: user?.role === "instructor" };
-      //   console.log(result);
       res.send(result);
     });
 
@@ -158,18 +171,6 @@ async function run() {
       res.send(result);
     });
 
-    // app.get('/selectedClass', async (req, res) => {
-    //     const email = req.query.email;
-
-    //     if (!email) {
-    //         res.send([]);
-    //     }
-
-    //     const query = { email: email };
-    //     const result = await selectedClassCollection.find(query).toArray();
-    //     res.send(result);
-    // });
-
     app.delete("/selectedClass/:id", async (req, res) => {
       const id = req.params.id;
       // console.log(id);
@@ -177,43 +178,6 @@ async function run() {
         _id: new ObjectId(id),
       });
       res.send(result);
-    });
-
-    // app.put("/selectedClass/:id", async (req, res) => {
-    //     const id = req.params.id;
-    //     console.log(id);
-    //     const filter = { _id: new ObjectId(id) }
-
-    //     const paidClass = {
-    //         $set: {
-    //             paymentStatus: "Paid"
-    //         }
-    //     }
-    //     const result = await selectedClassCollection.updateOne(filter, paidClass);
-    //     res.send(result);
-    // })
-
-    app.put("/selectedClass/:id", async (req, res) => {
-      const id = req.params.id;
-      console.log(id);
-      const filter = { _id: new ObjectId(id) };
-
-
-      const selectedClass = await selectedClassCollection.findOne(filter);
-      if (selectedClass.paymentStatus === "Paid") {
-        res.send({ message: "Payment is already confirmed" });
-        return;
-      }
-
-      const updatedClass = {
-        $set: {
-          paymentStatus: "Paid",
-        },
-      };
-      const updateResult = await selectedClassCollection.updateOne(
-        filter,
-        updatedClass
-      );
     });
 
     app.post("/users", async (req, res) => {
@@ -237,7 +201,7 @@ async function run() {
     });
 
     app.patch("/allUsers/:id", async (req, res) => {
-      console.log(req.params.id);
+      // console.log(req.params.id);
       const filter = { _id: new ObjectId(req.params.id) };
       const update = {
         $set: {
@@ -250,7 +214,7 @@ async function run() {
     });
 
     app.put("/allUsers/:id", async (req, res) => {
-      console.log(req.params.id);
+      // console.log(req.params.id);
 
       const filter = { _id: new ObjectId(req.params.id) };
       const update = {
@@ -263,17 +227,49 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/allUsers/:email", async (req, res) => {
+    app.get("/allUsers/:email", verifyJWT, async (req, res) => {
       const email = req.params.email;
-      //   console.log(email);
+      // console.log(email);
 
-      //   if (req.decoded.email !== email) {
-      //     res.send({ admin: false });
-      //   }
+      if (!req.decoded || req.decoded.email !== email) {
+        res.send({ admin: false });
+      }
 
       const user = await usersCollection.findOne({ email: email });
       const result = { admin: user?.role === "admin" };
-      //   console.log(result);
+      res.send(result);
+    });
+
+    app.post("/create-payment-intent", verifyJWT, async (req, res) => {
+      const price = req.body.price;
+      const amount = price * 100;
+      console.log(price, amount);
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+
+    app.post("/payments", verifyJWT, async (req, res) => {
+      const payment = req.body;
+      const paymentResult = await paymentsCollection.insertOne(payment);
+
+      const query = {
+        _id: { $in: payment.classesId.map((id) => new ObjectId(id)) },
+      };
+      const deleteResult = await selectedClassCollection.deleteMany(query);
+      res.send({ paymentResult, deleteResult });
+    });
+
+    app.get("/payments/:email", async (req, res) => {
+      const email = req.params.email;
+      const result = await paymentsCollection.find({ user: email }).toArray();
       res.send(result);
     });
   } finally {
