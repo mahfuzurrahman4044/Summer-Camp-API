@@ -149,7 +149,7 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/selectedClass", async (req, res) => {
+    app.get("/selectedClass", verifyJWT, async (req, res) => {
       const result = await selectedClassCollection.find().toArray();
       res.send(result);
     });
