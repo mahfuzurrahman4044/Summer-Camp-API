@@ -4,7 +4,7 @@ const cors = require("cors");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const stripe = require("stripe")(process.env.Payment_Secreat_Key);
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
@@ -145,6 +145,20 @@ async function run() {
     app.post("/selectedClass", async (req, res) => {
       const items = req.body;
       // console.log(items);
+      const id=items.id;
+      // console.log(id);
+
+      const updatedClass = await classesCollection.findOne({
+        _id: new ObjectId(id),
+      });
+      if (!updatedClass) {
+        return res.status(404).send("Class not found");
+      }
+
+      const query = { _id: new ObjectId(id) };
+      const update = { $inc: { availableClasses: -1 } };
+
+      await classesCollection.updateOne(query, update);
       const result = await selectedClassCollection.insertOne(items);
       res.send(result);
     });
@@ -174,6 +188,19 @@ async function run() {
     app.delete("/selectedClass/:id", async (req, res) => {
       const id = req.params.id;
       // console.log(id);
+
+      const deletedClass = await selectedClassCollection.findOne({
+        _id: new ObjectId(id),
+      });
+
+      if (!deletedClass) {
+        return res.status(404).send("Class not found");
+      }
+
+      const query = { _id: new ObjectId(deletedClass.id) };
+      const update = { $inc: { availableClasses: +1 } };
+
+      await classesCollection.updateOne(query, update);
       const result = await selectedClassCollection.deleteOne({
         _id: new ObjectId(id),
       });
