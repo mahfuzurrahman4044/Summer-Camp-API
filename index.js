@@ -70,8 +70,7 @@ async function run() {
       next();
     };
 
-    // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
@@ -143,23 +142,15 @@ async function run() {
     });
 
     app.post("/selectedClass", async (req, res) => {
-      const items = req.body;
-      // console.log(items);
-      const id=items.id;
-      // console.log(id);
+      const selectedClass = req.body;
+      // console.log(selectedClass);
 
-      const updatedClass = await classesCollection.findOne({
-        _id: new ObjectId(id),
-      });
-      if (!updatedClass) {
-        return res.status(404).send("Class not found");
-      }
+      const result = await selectedClassCollection.insertOne(selectedClass);
 
-      const query = { _id: new ObjectId(id) };
+      const query = { _id: new ObjectId(selectedClass.id) };
       const update = { $inc: { availableClasses: -1 } };
-
       await classesCollection.updateOne(query, update);
-      const result = await selectedClassCollection.insertOne(items);
+
       res.send(result);
     });
 
@@ -300,7 +291,6 @@ async function run() {
       res.send(result);
     });
   } finally {
-    // Ensures that the client will close when you finish/error
     // await client.close();
   }
 }
