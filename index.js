@@ -213,6 +213,32 @@ async function run() {
       res.send(result);
     });
 
+    app.put("/users/:email", async (req, res) => {
+      const email = req.params.email;
+      const updatedUserData = req.body;
+
+      try {
+        const result = await usersCollection.updateOne(
+          { email: email },
+          { $set: updatedUserData }
+        );
+
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ error: "Unable to update user information" });
+      }
+    });
+
+    app.delete("/users/:email", async (req, res) => {
+      const email = req.params.email;
+      try {
+        const deleteUser = await usersCollection.findOneAndDelete({ email });
+        res.send(deleteUser);
+      } catch (error) {
+        res.status(500).send({ error: "Internal Server Error" });
+      }
+    });
+
     app.get("/allUsers", verifyJWT, verifyAdmin, async (req, res) => {
       const result = await usersCollection.find().toArray();
       res.send(result);
